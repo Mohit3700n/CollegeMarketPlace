@@ -1,0 +1,2205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusXchange - Dashboard</title>
+
+    <!-- Google Fonts: Poppins -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Bootstrap 5.3 & Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background-color: #f4f7fe;
+        overflow-x: hidden; /* Horizontal scroll roko */
+      }
+
+      /* Sidebar Styling */
+      .sidebar {
+        width: 260px;
+        height: 100vh;
+        background: #111c44;
+        color: #fff;
+        position: fixed;
+        left: 0;
+        top: 0;
+        transition: transform 0.3s ease-in-out;
+        z-index: 1050; /* Overlays ke upar rakhne ke liye */
+      }
+      .sidebar .logo {
+        font-weight: 700;
+        font-size: 1.5rem;
+        letter-spacing: 1px;
+        color: #ffffff;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .sidebar-menu .nav-link {
+        color: #a0aec0;
+        font-weight: 500;
+        margin-bottom: 5px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+      .sidebar-menu .nav-link:hover,
+      .sidebar-menu .nav-link.active {
+        background-color: #4318ff;
+        color: #fff;
+      }
+      .sidebar-menu .nav-link i {
+        margin-right: 10px;
+        font-size: 1.2rem;
+      }
+
+      /* Main Content Area */
+      .main-content {
+        margin-left: 260px;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 30px;
+        transition: margin-left 0.3s ease-in-out;
+      }
+
+      /* Overlay for Mobile (Jab sidebar open ho) */
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+      }
+
+      /* Responsive Media Queries (Mobile View) */
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%); /* Mobile par default hide kardo */
+        }
+        .sidebar.show {
+          transform: translateX(
+            0
+          ); /* Jab 'show' class lage tab screen par lao */
+        }
+        .main-content {
+          margin-left: 0; /* Mobile par main content full width lega */
+          padding: 15px; /* Mobile ke liye padding kam kardi */
+        }
+        .sidebar-overlay.show {
+          display: block; /* Mobile par overlay dikhao jab sidebar open ho */
+        }
+        /* Hide user email on very small screens to save space */
+        #user-email-display {
+          display: none;
+        }
+      }
+
+      /* Section Hiding Logic */
+      .content-section {
+        display: none;
+        animation: fadeIn 0.4s ease-in-out;
+      }
+      .content-section.active-section {
+        display: block;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .premium-card {
+        background: #fff;
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        padding: 20px;
+      }
+
+      .msg-bubble {
+        max-width: 80%;
+        width: fit-content;
+        height: fit-content;
+        padding: 8px 12px;
+        border-radius: 12px;
+        position: relative;
+        word-wrap: break-word;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        user-select: none; /* Long press text selection roko */
+      }
+      .msg-mine {
+        background-color: #4318ff;
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 0px;
+      }
+      .msg-others {
+        background-color: #ffffff;
+        color: #212529;
+        align-self: flex-start;
+        border-bottom-left-radius: 0px;
+        border: 1px solid #e9ecef;
+      }
+
+      /* Floating Context Menu (Right Click) */
+      #chat-context-menu {
+        display: none;
+        position: fixed;
+        z-index: 1060;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        min-width: 150px;
+        overflow: hidden;
+        border: 1px solid #e9ecef;
+      }
+      .context-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.9rem;
+        color: #333;
+        transition: 0.2s;
+      }
+      .context-item:hover {
+        background-color: #f8f9fa;
+      }
+      .context-item.text-danger:hover {
+        background-color: #fff5f5;
+      }
+
+      /* --- DARK MODE OVERRIDES --- */
+      [data-bs-theme="dark"] body {
+        background-color: #0f172a !important;
+      }
+      [data-bs-theme="dark"] .premium-card {
+        background-color: #1e293b !important;
+        color: #f8fafc;
+        border: 1px solid #334155 !important;
+      }
+      [data-bs-theme="dark"] .sidebar {
+        background-color: #020617 !important;
+        border-right: 1px solid #1e293b;
+      }
+      [data-bs-theme="dark"] .bg-white {
+        background-color: #1e293b !important;
+      }
+      [data-bs-theme="dark"] .bg-light {
+        background-color: #0f172a !important;
+      }
+      [data-bs-theme="dark"] .text-dark {
+        color: #f1f5f9 !important;
+      }
+      [data-bs-theme="dark"] .text-muted {
+        color: #94a3b8 !important;
+      }
+      [data-bs-theme="dark"] input,
+      [data-bs-theme="dark"] select {
+        background-color: #334155 !important;
+        color: white !important;
+        border-color: #475569 !important;
+      }
+      [data-bs-theme="dark"] .chat-messages {
+        background-color: #0f172a !important;
+      }
+      [data-bs-theme="dark"] .msg-others {
+        background-color: #1e293b;
+        color: white;
+        border-color: #334155;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Mobile Overlay -->
+    <div
+      class="sidebar-overlay"
+      id="sidebar-overlay"
+      onclick="toggleSidebar()"
+    ></div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar d-flex flex-column p-3" id="sidebar">
+      <!-- Close button (Visible only on mobile) -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="logo w-100 text-center pb-2 m-0 border-bottom">
+          <i class="bi bi-box-seam"></i> CampusX
+        </div>
+        <button
+          class="btn btn-sm btn-outline-light d-md-none position-absolute"
+          style="right: 15px; top: 15px"
+          onclick="toggleSidebar()"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <ul class="nav nav-pills flex-column mb-auto sidebar-menu" id="menu">
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link active"
+            onclick="switchSection('marketplace', this)"
+          >
+            <i class="bi bi-shop"></i> Available Items
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('add-item', this)"
+          >
+            <i class="bi bi-plus-circle-dotted"></i> Add New Item
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('my-listings', this)"
+          >
+            <i class="bi bi-card-list"></i> My Listings
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('my-wishlist', this)"
+          >
+            <i class="bi bi-heart"></i> My Wishlist
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('need-board', this)"
+          >
+            <i class="bi bi-megaphone"></i> "Need It" Board
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('global-chat', this)"
+          >
+            <i class="bi bi-chat-dots"></i> Global Chat
+          </a>
+        </li>
+        <li class="nav-item mt-3">
+          <!-- Ek chota divider aur label UI ko clean dikhane ke liye -->
+          <small
+            class="text-white-50 px-3 fw-bold"
+            style="
+              font-size: 0.7rem;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            "
+            >Campus Life</small
+          >
+        </li>
+
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('lost-found', this)"
+          >
+            <i class="bi bi-search-heart"></i> Lost & Found
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('pyq-vault', this)"
+          >
+            <i class="bi bi-journal-bookmark-fill"></i> PYQs & Notes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a
+            href="#"
+            class="nav-link"
+            onclick="switchSection('project-mates', this)"
+          >
+            <i class="bi bi-people-fill"></i> Find Project Mates
+          </a>
+        </li>
+      </ul>
+
+      <hr class="text-white-50" />
+      <div class="user-profile mb-2">
+        <a
+          href="#"
+          class="nav-link text-light d-flex align-items-center"
+          id="dark-mode-toggle"
+          onclick="toggleDarkMode()"
+        >
+          <i class="bi bi-moon-stars-fill me-2"></i> Dark Mode
+        </a>
+      </div>
+      <div class="user-profile mb-2">
+        <a
+          href="#"
+          class="nav-link text-danger d-flex align-items-center"
+          id="logout-btn"
+        >
+          <i class="bi bi-box-arrow-left me-2"></i> Logout
+        </a>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="main-content">
+      <!-- Top Bar -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+          <!-- Hamburger Menu Button for Mobile -->
+          <button
+            class="btn btn-light shadow-sm me-3 d-md-none"
+            onclick="toggleSidebar()"
+          >
+            <i class="bi bi-list fs-4"></i>
+          </button>
+          <h2 id="section-title" class="fw-bold m-0 fs-3">Available Items</h2>
+        </div>
+
+        <div
+          class="d-flex align-items-center bg-white px-3 py-2 rounded-pill shadow-sm"
+        >
+          <img
+            id="user-profile-img"
+            src=""
+            alt="Profile"
+            class="rounded-circle me-2 shadow-sm"
+            style="width: 35px; height: 35px; display: none; object-fit: cover"
+            referrerpolicy="no-referrer"
+          />
+          <i
+            id="default-user-icon"
+            class="bi bi-person-circle fs-2 text-primary me-2"
+          ></i>
+
+          <div class="d-flex flex-column lh-1 ms-1 d-none d-md-flex">
+            <!-- Mobile par text hide hoga, sirf image dikhegi -->
+            <span
+              id="user-name-display"
+              class="fw-bold text-dark mb-1"
+              style="font-size: 0.9rem"
+              >Loading...</span
+            >
+            <span
+              id="user-email-display"
+              class="text-muted"
+              style="font-size: 0.75rem"
+            ></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 1: MARKETPLACE -->
+      <div id="marketplace" class="content-section active-section">
+        <div class="premium-card mb-4">
+          <p class="text-muted">
+            Explore items listed by your college seniors and batchmates.
+          </p>
+          <div class="d-flex gap-2 mb-3">
+            <input
+              id="search-input"
+              type="text"
+              class="form-control"
+              placeholder="Search items..."
+            />
+            <button class="btn btn-primary">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+        <div class="row" id="product-feed">
+          <div class="col-12 text-center text-muted py-5">
+            <i class="bi bi-hourglass-split fs-2"></i><br />Items will load
+            here...
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: ADD ITEM -->
+      <div id="add-item" class="content-section">
+        <div class="premium-card mx-auto" style="max-width: 600px">
+          <h4 class="mb-4" id="form-title">List a New Item</h4>
+          <form id="ui-add-product-form">
+            <!-- Hidden input to store item ID during edit -->
+            <input type="hidden" id="edit-item-id" value="" />
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Item Title</label>
+              <input
+                id="item-title"
+                type="text"
+                class="form-control"
+                placeholder="e.g., Engineering Drawing Drafter"
+                required
+              />
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6 mb-3 mb-md-0">
+                <label class="form-label fw-medium">Price (₹)</label>
+                <input
+                  id="item-price"
+                  type="number"
+                  class="form-control"
+                  placeholder="300"
+                  required
+                />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-medium">Category</label>
+                <select id="item-category" class="form-select" required>
+                  <option value="Books/Notes">Books/Notes</option>
+                  <option value="Instruments">Instruments</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-medium">Your WhatsApp Number</label>
+              <input
+                id="item-whatsapp"
+                type="number"
+                class="form-control"
+                placeholder="10-digit number"
+                required
+              />
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-medium"
+                >Upload Image
+                <small class="text-muted" id="image-help-text"></small
+              ></label>
+              <input
+                id="item-image"
+                type="file"
+                class="form-control"
+                accept="image/*"
+                required
+              />
+            </div>
+
+            <button
+              id="submit-item-btn"
+              type="submit"
+              class="btn btn-primary w-100 py-2"
+            >
+              Submit Listing
+            </button>
+            <button
+              type="button"
+              id="cancel-edit-btn"
+              class="btn btn-light w-100 py-2 mt-2"
+              style="display: none"
+              onclick="resetAddForm()"
+            >
+              Cancel Edit
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- SECTION 3: MY LISTINGS (Updated with feed container) -->
+      <div id="my-listings" class="content-section">
+        <div class="premium-card mb-4">
+          <p class="text-muted mb-0">
+            Manage the items you have listed. Edit their details or delete them
+            if sold.
+          </p>
+        </div>
+        <!-- Items grid -->
+        <div class="row" id="my-listings-feed">
+          <div class="col-12 text-center text-muted py-5">
+            <i class="bi bi-box fs-1 text-muted"></i>
+            <p class="mt-2 text-muted">Your listings will appear here.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: MY WISHLIST -->
+      <div id="my-wishlist" class="content-section">
+        <div class="premium-card mb-4">
+          <h5 class="text-danger fw-bold m-0">
+            <i class="bi bi-heart-fill me-2"></i>Saved Items
+          </h5>
+          <p class="text-muted mb-0 mt-1">
+            Items you loved and saved for later.
+          </p>
+        </div>
+        <div class="row" id="wishlist-feed">
+          <div class="col-12 text-center text-muted py-5">
+            <i class="bi bi-bookmark-heart fs-1 text-muted"></i>
+            <p class="mt-2 text-muted">Your wishlist is empty.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: NEED BOARD -->
+      <div id="need-board" class="content-section">
+        <!-- Premium Header Banner -->
+        <div
+          class="premium-card bg-warning bg-opacity-10 border-warning border-start border-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2"
+        >
+          <div>
+            <h5 class="text-warning-emphasis m-0">
+              <i class="bi bi-megaphone-fill me-2"></i>Request an Item
+            </h5>
+            <p class="mb-0 text-muted small">
+              Can't find it? Post a request and seniors will contact you.
+            </p>
+          </div>
+          <!-- Button to toggle the form -->
+          <button
+            class="btn btn-warning fw-medium shadow-sm"
+            data-bs-toggle="collapse"
+            data-bs-target="#requestFormCollapse"
+          >
+            + Post Request
+          </button>
+        </div>
+
+        <!-- Collapsible Request Form -->
+        <div class="collapse mb-4" id="requestFormCollapse">
+          <div class="premium-card border border-warning shadow-sm">
+            <form id="need-board-form">
+              <div class="mb-3">
+                <label class="form-label fw-medium">What do you need?</label>
+                <input
+                  type="text"
+                  id="req-title"
+                  class="form-control"
+                  placeholder="e.g., 2nd Year OS Notes or Drafter"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-medium">Your WhatsApp Number</label>
+                <input
+                  type="number"
+                  id="req-whatsapp"
+                  class="form-control"
+                  placeholder="10-digit number for sellers to reach you"
+                  required
+                />
+              </div>
+              <div class="d-flex gap-2">
+                <button
+                  type="submit"
+                  id="req-submit-btn"
+                  class="btn btn-warning fw-bold w-100 py-2"
+                >
+                  Submit Request
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light w-50"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#requestFormCollapse"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Requests Feed -->
+        <div class="row" id="need-board-feed">
+          <div class="col-12 text-center py-5">
+            <div class="spinner-border text-warning" role="status"></div>
+            <p class="mt-2 text-muted">Loading requests...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 5: GLOBAL CHAT -->
+      <div id="global-chat" class="content-section">
+        <!-- Right Click Menu (Hidden) -->
+        <div id="chat-context-menu">
+          <div
+            class="context-item"
+            id="menu-copy"
+            onclick="executeChatAction('copy')"
+          >
+            <i class="bi bi-copy"></i> Copy Text
+          </div>
+          <div
+            class="context-item text-warning"
+            id="menu-edit"
+            onclick="executeChatAction('edit')"
+          >
+            <i class="bi bi-pencil"></i> Edit Message
+          </div>
+          <div
+            class="context-item text-danger"
+            id="menu-delete"
+            onclick="executeChatAction('delete')"
+          >
+            <i class="bi bi-trash"></i> Delete Message
+          </div>
+        </div>
+
+        <div
+          class="premium-card"
+          style="
+            height: 75vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+          "
+        >
+          <div
+            class="chat-header border-bottom pb-3 mb-2 d-flex justify-content-between align-items-center"
+          >
+            <h5 class="m-0">
+              <i class="bi bi-globe me-2"></i>Campus Global Chat
+            </h5>
+            <span class="badge bg-success bg-opacity-10 text-success"
+              ><i class="bi bi-circle-fill me-1" style="font-size: 0.5rem"></i
+              >Live</span
+            >
+          </div>
+
+          <!-- Chat Messages -->
+          <div
+            id="chat-box"
+            class="flex-grow-1 rounded p-3 d-flex flex-column gap-2"
+            style="
+              overflow-y: auto;
+              background-color: #f4f7fe;
+              scroll-behavior: smooth;
+            "
+          >
+            <!-- Messages will load here -->
+          </div>
+
+          <!-- Typing Indicator -->
+          <div
+            id="typing-indicator-ui"
+            class="text-muted fst-italic px-3 pb-2"
+            style="font-size: 0.8rem; display: none; background-color: #f4f7fe"
+          >
+            Someone is typing...
+          </div>
+
+          <!-- Chat Input Form -->
+          <form
+            id="chat-form"
+            class="chat-input border-top pt-3 d-flex flex-column gap-2 bg-white"
+          >
+            <!-- Edit Mode Banner -->
+            <div
+              id="edit-indicator"
+              class="d-none justify-content-between align-items-center bg-warning bg-opacity-10 text-warning-emphasis px-3 py-1 rounded"
+              style="font-size: 0.85rem"
+            >
+              <span><i class="bi bi-pencil-square me-2"></i>Editing...</span>
+              <button
+                type="button"
+                class="btn-close"
+                style="font-size: 0.6rem"
+                onclick="cancelEditMsg()"
+              ></button>
+            </div>
+
+            <div class="d-flex gap-2">
+              <input type="hidden" id="edit-msg-id" value="" />
+              <input
+                type="text"
+                id="chat-input"
+                class="form-control bg-light border-0 py-2"
+                placeholder="Message..."
+                required
+                autocomplete="off"
+              />
+              <button
+                type="submit"
+                id="chat-send-btn"
+                class="btn btn-primary px-4 rounded-3 shadow-sm"
+              >
+                <i class="bi bi-send-fill"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- SECTION 6: LOST & FOUND -->
+      <div id="lost-found" class="content-section">
+        <div
+          class="premium-card mb-4 bg-info bg-opacity-10 border-info border-start border-4 d-flex justify-content-between align-items-center flex-wrap gap-2"
+        >
+          <div>
+            <h5 class="text-info-emphasis m-0">
+              <i class="bi bi-search-heart me-2"></i>Lost & Found
+            </h5>
+            <p class="mb-0 text-muted small">
+              Report lost items or post things you've found on campus.
+            </p>
+          </div>
+          <button
+            class="btn btn-info text-white fw-medium shadow-sm"
+            data-bs-toggle="collapse"
+            data-bs-target="#lfFormCollapse"
+          >
+            + Report Item
+          </button>
+        </div>
+
+        <div class="collapse mb-4" id="lfFormCollapse">
+          <div class="premium-card border border-info shadow-sm">
+            <form id="lf-form">
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <label class="form-label fw-medium">Item Description</label>
+                  <input
+                    type="text"
+                    id="lf-title"
+                    class="form-control"
+                    placeholder="e.g., Black Titan Watch in Canteen"
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mt-3 mt-md-0">
+                  <label class="form-label fw-medium">Type</label>
+                  <select id="lf-type" class="form-select" required>
+                    <option value="Lost">I Lost This</option>
+                    <option value="Found">I Found This</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-medium">Your WhatsApp Number</label>
+                <input
+                  type="number"
+                  id="lf-whatsapp"
+                  class="form-control"
+                  placeholder="10-digit number"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                id="lf-submit-btn"
+                class="btn btn-info text-white fw-bold w-100 py-2"
+              >
+                Submit Report
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="row" id="lf-feed">
+          <div class="col-12 text-center py-5">
+            <div class="spinner-border text-info"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 7: PYQ VAULT -->
+      <div id="pyq-vault" class="content-section">
+        <div
+          class="premium-card mb-4 bg-success bg-opacity-10 border-success border-start border-4 d-flex justify-content-between align-items-center flex-wrap gap-2"
+        >
+          <div>
+            <h5 class="text-success-emphasis m-0">
+              <i class="bi bi-journal-bookmark-fill me-2"></i>Academic Vault
+            </h5>
+            <p class="mb-0 text-muted small">
+              Access and share PYQs and class notes.
+            </p>
+          </div>
+          <button
+            class="btn btn-success fw-medium shadow-sm"
+            data-bs-toggle="collapse"
+            data-bs-target="#pyqFormCollapse"
+          >
+            + Share Notes
+          </button>
+        </div>
+
+        <div class="collapse mb-4" id="pyqFormCollapse">
+          <div class="premium-card border border-success shadow-sm">
+            <form id="pyq-form">
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <label class="form-label fw-medium"
+                    >Topic / Subject Name</label
+                  >
+                  <input
+                    type="text"
+                    id="pyq-title"
+                    class="form-control"
+                    placeholder="e.g., Sem 3 OS PYQs"
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mt-3 mt-md-0">
+                  <label class="form-label fw-medium">Semester</label>
+                  <select id="pyq-sem" class="form-select">
+                    <option>Sem 1-2 (FE)</option>
+                    <option>Sem 3-4 (SE)</option>
+                    <option>Sem 5-6 (TE)</option>
+                    <option>Sem 7-8 (BE)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-medium"
+                  >Google Drive / PDF Link</label
+                >
+                <input
+                  type="url"
+                  id="pyq-link"
+                  class="form-control"
+                  placeholder="https://drive.google.com/..."
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                id="pyq-submit-btn"
+                class="btn btn-success fw-bold w-100 py-2"
+              >
+                Share Link
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="row" id="pyq-feed">
+          <div class="col-12 text-center py-5">
+            <div class="spinner-border text-success"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 8: PROJECT MATES -->
+      <div id="project-mates" class="content-section">
+        <div
+          class="premium-card mb-4 bg-primary bg-opacity-10 border-primary border-start border-4 d-flex justify-content-between align-items-center flex-wrap gap-2"
+        >
+          <div>
+            <h5 class="text-primary-emphasis m-0">
+              <i class="bi bi-people-fill me-2"></i>Project Partners
+            </h5>
+            <p class="mb-0 text-muted small">
+              Find team members or exchange skills.
+            </p>
+          </div>
+          <button
+            class="btn btn-primary fw-medium shadow-sm"
+            data-bs-toggle="collapse"
+            data-bs-target="#pmFormCollapse"
+          >
+            + Create Post
+          </button>
+        </div>
+
+        <div class="collapse mb-4" id="pmFormCollapse">
+          <div class="premium-card border border-primary shadow-sm">
+            <form id="pm-form">
+              <div class="mb-3">
+                <label class="form-label fw-medium"
+                  >What are you looking for?</label
+                >
+                <input
+                  type="text"
+                  id="pm-title"
+                  class="form-control"
+                  placeholder="e.g., Need a Flutter Dev for Hackathon"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-medium"
+                  >Skills Required / Your Skills</label
+                >
+                <input
+                  type="text"
+                  id="pm-skills"
+                  class="form-control"
+                  placeholder="e.g., Python, UI/UX, AI/ML"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-medium">Your WhatsApp Number</label>
+                <input
+                  type="number"
+                  id="pm-whatsapp"
+                  class="form-control"
+                  placeholder="10-digit number"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                id="pm-submit-btn"
+                class="btn btn-primary fw-bold w-100 py-2"
+              >
+                Post Requirement
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="row" id="pm-feed">
+          <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      // --- MOBILE SIDEBAR TOGGLE LOGIC ---
+      function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("show");
+        document.getElementById("sidebar-overlay").classList.toggle("show");
+      }
+
+      // --- NAVIGATION LOGIC ---
+      function switchSection(sectionId, clickedElement) {
+        document.querySelectorAll(".content-section").forEach((section) => {
+          section.classList.remove("active-section");
+        });
+
+        document.querySelectorAll(".sidebar-menu .nav-link").forEach((link) => {
+          link.classList.remove("active");
+        });
+
+        document.getElementById(sectionId).classList.add("active-section");
+        clickedElement.classList.add("active");
+        document.getElementById("section-title").innerText =
+          clickedElement.innerText.trim();
+
+        // Mobile logic: Tab click karne ke baad sidebar apne aap band ho jaye
+        if (window.innerWidth <= 768) {
+          toggleSidebar();
+        }
+      }
+    </script>
+
+    <!-- Firebase Logic Placeholder -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        serverTimestamp,
+        getDocs,
+        query,
+        orderBy,
+        where,
+        doc,
+        deleteDoc,
+        updateDoc,
+        onSnapshot,
+        setDoc,
+        arrayUnion,
+        arrayRemove,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      // YAHA APNA FIREBASE CONFIG DAALNA MAT BHOOLNA
+      const firebaseConfig = {
+        apiKey: "AIzaSyAYEaxgRpLg4sItZx0io1vihe8aZDl_GUY",
+        authDomain: "sjcem-marketplace.firebaseapp.com",
+        projectId: "sjcem-marketplace",
+        storageBucket: "sjcem-marketplace.firebasestorage.app",
+        messagingSenderId: "732493265107",
+        appId: "1:732493265107:web:4309399f2e49db408efc26",
+        measurementId: "G-GE8Q4BDZ9J",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      let currentUser = null;
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // 1. Update Name
+          currentUser = user;
+          document.getElementById("user-name-display").innerText =
+            user.displayName || "College Student";
+          document.getElementById("user-email-display").innerText = user.email;
+
+          // 2. Update Profile Picture
+          if (user.photoURL) {
+            console.log(user.photoURL);
+            document.getElementById("user-profile-img").src = user.photoURL;
+            document.getElementById("user-profile-img").style.display = "block";
+            document.getElementById("default-user-icon").style.display = "none"; // Default icon hide kar do
+          }
+          loadProducts();
+          loadMyListings();
+          loadNeedBoard();
+          loadWishlist();
+          initGlobalChat();
+
+          loadLostFound();
+          loadPyqVault();
+          loadProjectMates();
+        } else {
+          window.location.href = "/"; // Send back to login
+        }
+      });
+
+      document.getElementById("logout-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        signOut(auth).then(() => {
+          window.location.href = "/";
+        });
+      });
+
+      // --- ADD / UPDATE FORM SUBMIT LOGIC ---
+      document
+        .getElementById("ui-add-product-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const editId = document.getElementById("edit-item-id").value; // Agar ID hai, toh matlab update chal raha hai
+          const title = document.getElementById("item-title").value;
+          const price = document.getElementById("item-price").value;
+          const category = document.getElementById("item-category").value;
+          const whatsapp = document.getElementById("item-whatsapp").value;
+          const fileInput = document.getElementById("item-image");
+          const file = fileInput.files[0];
+          const btn = document.getElementById("submit-item-btn");
+
+          // Naya item hai aur image nahi dali, toh error do
+          if (!editId && !file) {
+            alert("Please select an image file.");
+            return;
+          }
+
+          btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Processing...`;
+          btn.disabled = true;
+
+          try {
+            let finalImageUrl = null;
+
+            // Agar user ne nayi image select ki hai (chahe naya item ho ya edit kar raha ho)
+            if (file) {
+              const uniqueFilename =
+                "listings/" +
+                Date.now() +
+                "_" +
+                file.name.replace(/[^a-zA-Z0-9.]/g, "");
+
+              // Cloudflare R2 Upload
+              const urlResponse = await fetch("/api/get-upload-url", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  filename: uniqueFilename,
+                  contentType: file.type,
+                }),
+              });
+              const urlData = await urlResponse.json();
+              if (urlData.error) throw new Error(urlData.error);
+
+              const uploadResponse = await fetch(urlData.uploadUrl, {
+                method: "PUT",
+                headers: { "Content-Type": file.type },
+                body: file,
+              });
+              if (!uploadResponse.ok) throw new Error("Image upload failed.");
+
+              finalImageUrl = urlData.publicUrl;
+            }
+
+            if (editId) {
+              // --- UPDATE EXISTING ITEM ---
+              const updateData = {
+                title: title,
+                price: Number(price),
+                category: category,
+                whatsapp: whatsapp,
+              };
+              // Agar nayi image upload hui, tabhi imageUrl update karo, warna purani rehne do
+              if (finalImageUrl) updateData.imageUrl = finalImageUrl;
+
+              await updateDoc(doc(db, "listings", editId), updateData);
+              alert("Item Updated Successfully!");
+            } else {
+              // --- CREATE NEW ITEM ---
+              await addDoc(collection(db, "listings"), {
+                title: title,
+                price: Number(price),
+                category: category,
+                whatsapp: whatsapp,
+                imageUrl: finalImageUrl,
+                sellerName: currentUser?.displayName || "Student",
+                sellerEmail: currentUser?.email || "Unknown",
+                sellerPhoto: currentUser?.photoURL || "",
+                createdAt: serverTimestamp(),
+                status: "available",
+              });
+              alert("Item Listed Successfully!");
+            }
+
+            // Done. Form clean karo aur Dashboard refresh karo
+            resetAddForm();
+            loadProducts();
+            loadMyListings();
+            loadNeedBoard();
+            document
+              .querySelector(`a[onclick="switchSection('marketplace', this)"]`)
+              .click();
+          } catch (error) {
+            console.error("Listing Error: ", error);
+            alert("Failed to process listing: " + error.message);
+          } finally {
+            btn.innerHTML = editId ? "Update Listing" : "Submit Listing";
+            btn.disabled = false;
+          }
+        });
+
+      //2. MARKETPLACE LOGIC:
+
+      let allProducts = [];
+
+      async function loadProducts() {
+        const feed = document.getElementById("product-feed");
+        feed.innerHTML = `<div class="col-12 text-center text-muted py-5"><div class="spinner-border text-primary" role="status"></div><br/>Loadings items....</div>`;
+        try {
+          // Latest items pehle laane ke liye orderBy query
+          const q = query(
+            collection(db, "listings"),
+            orderBy("createdAt", "desc"),
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            feed.innerHTML = `<div class="col-12 text-center text-muted py-5">No items listed yet. Be the first to list!</div>`;
+            return;
+          }
+
+          allProducts = [];
+          querySnapshot.forEach((doc) => {
+            allProducts.push({ id: doc.id, ...doc.data() });
+          });
+
+          renderProducts(allProducts);
+        } catch (error) {
+          console.error("Error loading feed: ", error);
+          feed.innerHTML = `<div class="col-12 text-center text-danger py-5">Failed to load items. Check console.</div>`;
+        }
+      }
+
+      function renderProducts(productsArray) {
+        const feed = document.getElementById("product-feed");
+        feed.innerHTML = "";
+
+        if (productsArray.length === 0) {
+          feed.innerHTML = `<div class="col-12 text-center text-muted py-5">No items found matching your search.</div>`;
+          return;
+        }
+
+        productsArray.forEach((data) => {
+          // WhatsApp Redirect
+          const waMessage = encodeURIComponent(
+            `Hi ${data.sellerName}, I am from college. I saw your listing for "${data.title}" priced at ₹${data.price} on CampusXchange. Is it available?`,
+          );
+          const waLink = `https://wa.me/91${data.whatsapp}?text=${waMessage}`;
+
+          // TIME CALCULATION NAYA ADD KIYA HAI
+          let timeString = "Just now";
+          if (data.createdAt) {
+            timeString = timeAgo(data.createdAt.toDate());
+          }
+
+          // (Inside renderProducts function)
+          const isSold = data.status === "sold";
+          const savedArray = data.savedBy || [];
+          const isSaved = currentUser && savedArray.includes(currentUser.email);
+
+          const cardHtml = `
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-0 premium-card p-0 overflow-hidden ${isSold ? "opacity-75" : ""}">
+                
+                <!-- Image & Overlays -->
+                <div class="position-relative">
+                    <img src="${data.imageUrl}" class="card-img-top" style="height: 200px; object-fit: cover; ${isSold ? "filter: grayscale(100%);" : ""}" referrerpolicy="no-referrer">
+                    
+                    <!-- SOLD Overlay -->
+                    ${isSold ? `<div class="position-absolute top-50 start-50 translate-middle bg-danger text-white px-4 py-1 rounded fw-bold shadow" style="transform: translate(-50%, -50%) rotate(-15deg) !important; font-size: 1.2rem; letter-spacing: 2px;">SOLD OUT</div>` : ""}
+                    <button class="btn btn-sm btn-light position-absolute shadow-sm rounded-circle" style="top: 10px; right: 55px; width: 35px; height: 35px; z-index: 10;" onclick="shareItem('${data.title.replace(/'/g, "\\'")}', ${data.price})" title="Share">
+                        <i class="bi bi-share-fill text-primary" style="line-height: 1;"></i>
+                    </button>
+                    <!-- Wishlist Heart Button -->
+                    <button class="btn btn-sm btn-light position-absolute shadow-sm rounded-circle" style="top: 10px; right: 10px; width: 35px; height: 35px; z-index: 10;" onclick="toggleWishlist('${data.id}', ${isSaved})">
+                        <i class="bi ${isSaved ? "bi-heart-fill text-danger" : "bi-heart"} fs-5" style="line-height: 1;"></i>
+                    </button>
+                </div>
+
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary">${data.category}</span>
+                        <h5 class="text-success fw-bold m-0">₹${data.price}</h5>
+                    </div>
+                    <h5 class="card-title fw-bold text-dark mb-1 ${isSold ? "text-decoration-line-through text-muted" : ""}">${data.title}</h5>
+                    
+                    <div class="d-flex align-items-center mt-3 mb-3">
+                        <img src="${data.sellerPhoto || "https://via.placeholder.com/30"}" class="rounded-circle me-2 shadow-sm" style="width:30px; height:30px; object-fit: cover; ${isSold ? "filter: grayscale(100%);" : ""}" referrerpolicy="no-referrer">
+                        <div class="d-flex flex-column">
+                            <small class="text-muted fw-bold" style="font-size: 0.8rem; line-height: 1.1;">${data.sellerName}</small>
+                            <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-clock me-1"></i>${timeString}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto">
+                        ${
+                          isSold
+                            ? `
+                            <button class="btn btn-secondary w-100 fw-medium" disabled>
+                                <i class="bi bi-bag-x-fill me-2"></i> Item Sold
+                            </button>
+                        `
+                            : `
+                            <a href="${waLink}" target="_blank" class="btn btn-success w-100 fw-medium">
+                                <i class="bi bi-whatsapp me-2"></i> Chat with Seller
+                            </a>
+                        `
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+          feed.innerHTML += cardHtml;
+        });
+      }
+
+      document.getElementById("search-input").addEventListener("input", (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+
+        if (!allProducts.length) return;
+
+        // Title ya Category ke basis par filter
+        const filteredProducts = allProducts.filter(
+          (p) =>
+            p.title.toLowerCase().includes(searchTerm) ||
+            p.category.toLowerCase().includes(searchTerm),
+        );
+
+        renderProducts(filteredProducts);
+      });
+
+      // --- MY LISTINGS LOGIC ---
+
+      // 1. Load User's Listings
+      async function loadMyListings() {
+        const feed = document.getElementById("my-listings-feed");
+        feed.innerHTML = `<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>`;
+
+        try {
+          // Sirf wahi item lao jiska sellerEmail logged-in user ka email hai
+          const q = query(
+            collection(db, "listings"),
+            where("sellerEmail", "==", currentUser.email),
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            feed.innerHTML = `<div class="col-12 text-center text-muted py-5"><i class="bi bi-box fs-1"></i><p class="mt-2">You haven't listed any items yet.</p></div>`;
+            return;
+          }
+
+          feed.innerHTML = "";
+          querySnapshot.forEach((document) => {
+            const data = document.data();
+            const id = document.id;
+
+            // My Listings Card HTML Update
+            const isSold = data.status === "sold";
+
+            const cardHtml = `
+        <div class="col-md-4 mb-4">
+          <div class="card h-100 shadow-sm border-0 premium-card p-0 ${isSold ? "opacity-75" : ""}">
+            <img src="${data.imageUrl}" class="card-img-top" style="height: 180px; object-fit: cover; ${isSold ? "filter: grayscale(100%);" : ""}" referrerpolicy="no-referrer">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary">${data.category}</span>
+                ${isSold ? `<span class="badge bg-danger">SOLD</span>` : `<span class="badge bg-success">ACTIVE</span>`}
+              </div>
+              <h5 class="card-title fw-bold">${data.title}</h5>
+              <h6 class="text-success fw-bold mb-3">₹${data.price}</h6>
+              
+              <div class="mt-auto d-flex flex-column gap-2">
+                <button class="btn btn-sm ${isSold ? "btn-success" : "btn-secondary"} w-100 fw-bold" onclick="toggleSoldStatus('${id}', '${data.status || "available"}')">
+                  <i class="bi ${isSold ? "bi-arrow-counterclockwise" : "bi-check-circle"}"></i> ${isSold ? "Mark as Available" : "Mark as Sold"}
+                </button>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-outline-primary w-50 btn-sm" onclick="editListing('${id}', '${data.title}', ${data.price}, '${data.category}', '${data.whatsapp}')" ${isSold ? "disabled" : ""}>
+                    <i class="bi bi-pencil-square"></i> Edit
+                  </button>
+                  <button class="btn btn-outline-danger w-50 btn-sm" onclick="deleteListing('${id}')">
+                    <i class="bi bi-trash3"></i> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+            feed.innerHTML += cardHtml;
+          });
+        } catch (error) {
+          console.error("Error loading my listings: ", error);
+        }
+      }
+
+      // 2. Delete Listing (Global scope me export kiya taaki button HTML se call ho sake)
+      window.deleteListing = async (id) => {
+        // Alert Confirmation
+        if (
+          confirm(
+            "Are you sure you want to delete this listing? This action cannot be undone.",
+          )
+        ) {
+          try {
+            await deleteDoc(doc(db, "listings", id));
+            alert("Item deleted successfully.");
+            loadProducts(); // Refresh Marketplace
+            loadMyListings(); // Refresh My Listings
+          } catch (error) {
+            console.error("Error deleting item:", error);
+            alert("Failed to delete item.");
+          }
+        }
+      };
+
+      // 3. Edit Listing (Pre-fill form data)
+      window.editListing = (id, title, price, category, whatsapp) => {
+        // Values set karo
+        document.getElementById("edit-item-id").value = id;
+        document.getElementById("item-title").value = title;
+        document.getElementById("item-price").value = price;
+        document.getElementById("item-category").value = category;
+        document.getElementById("item-whatsapp").value = whatsapp;
+
+        // UI Changes
+        document.getElementById("form-title").innerText = "Edit Item Details";
+        document.getElementById("submit-item-btn").innerText = "Update Listing";
+        document.getElementById("cancel-edit-btn").style.display = "block";
+
+        // Edit mode me nayi image dalna zaroori nahi hai
+        document.getElementById("item-image").required = false;
+        document.getElementById("image-help-text").innerText =
+          "(Leave empty to keep current image)";
+
+        // Add Item wale tab par auto-click / redirect
+        document
+          .querySelector(`a[onclick="switchSection('add-item', this)"]`)
+          .click();
+      };
+
+      // 4. Form Reset Helper
+      window.resetAddForm = () => {
+        document.getElementById("ui-add-product-form").reset();
+        document.getElementById("edit-item-id").value = "";
+        document.getElementById("form-title").innerText = "List a New Item";
+        document.getElementById("submit-item-btn").innerText = "Submit Listing";
+        document.getElementById("cancel-edit-btn").style.display = "none";
+        document.getElementById("item-image").required = true;
+        document.getElementById("image-help-text").innerText = "";
+      };
+
+      // --- NEED BOARD LOGIC ---
+
+      // 1. Submit a New Request
+      document
+        .getElementById("need-board-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const title = document.getElementById("req-title").value;
+          const whatsapp = document.getElementById("req-whatsapp").value;
+          const btn = document.getElementById("req-submit-btn");
+
+          btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Posting...`;
+          btn.disabled = true;
+
+          try {
+            // Save to a new collection named "requests"
+            await addDoc(collection(db, "requests"), {
+              title: title,
+              whatsapp: whatsapp,
+              requesterName: currentUser?.displayName || "Student",
+              requesterEmail: currentUser?.email || "Unknown",
+              requesterPhoto: currentUser?.photoURL || "",
+              createdAt: serverTimestamp(),
+            });
+
+            // Reset Form & Close Collapse
+            document.getElementById("need-board-form").reset();
+            const collapseElement = document.getElementById(
+              "requestFormCollapse",
+            );
+            const bsCollapse =
+              bootstrap.Collapse.getInstance(collapseElement) ||
+              new bootstrap.Collapse(collapseElement);
+            bsCollapse.hide();
+
+            // Reload the feed to show new request
+            loadNeedBoard();
+          } catch (error) {
+            console.error("Error posting request:", error);
+            alert("Failed to post request.");
+          } finally {
+            btn.innerHTML = "Submit Request";
+            btn.disabled = false;
+          }
+        });
+
+      // 2. Load Requests Feed
+      async function loadNeedBoard() {
+        const feed = document.getElementById("need-board-feed");
+        feed.innerHTML = `<div class="col-12 text-center py-5"><div class="spinner-border text-warning" role="status"></div></div>`;
+
+        try {
+          const q = query(
+            collection(db, "requests"),
+            orderBy("createdAt", "desc"),
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            feed.innerHTML = `
+        <div class="col-12 text-center py-5 bg-white rounded-3 shadow-sm border border-light">
+          <i class="bi bi-emoji-smile fs-1 text-muted"></i>
+          <p class="mt-2 text-muted mb-0">No active requests right now.</p>
+        </div>`;
+            return;
+          }
+
+          feed.innerHTML = "";
+          querySnapshot.forEach((documentSnapshot) => {
+            const data = documentSnapshot.data();
+            const id = documentSnapshot.id;
+
+            // Ensure currentUser exists before checking email
+            const isOwner =
+              currentUser && data.requesterEmail === currentUser.email;
+
+            const waMessage = encodeURIComponent(
+              `Hi ${data.requesterName}, I saw your request for "${data.title}" on CampusXchange. I have it!`,
+            );
+            const waLink = `https://wa.me/91${data.whatsapp}?text=${waMessage}`;
+
+            const cardHtml = `
+        <div class="col-md-6 mb-3">
+          <div class="card shadow-sm border-0 premium-card h-100">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <img src="${data.requesterPhoto || "https://via.placeholder.com/30"}" class="rounded-circle me-2 shadow-sm" style="width:35px; height:35px; object-fit: cover;" referrerpolicy="no-referrer">
+                <div>
+                  <h6 class="m-0 fw-bold">${data.requesterName}</h6>
+                  <small class="text-muted" style="font-size: 0.75rem;">Needs an item</small>
+                </div>
+              </div>
+              
+              <h5 class="fw-bold text-dark mb-3">"${data.title}"</h5>
+              
+              <div class="d-flex gap-2">
+                <a href="${waLink}" target="_blank" class="btn btn-warning w-100 fw-medium d-flex justify-content-center align-items-center gap-2">
+                  <i class="bi bi-whatsapp"></i> I Have This
+                </a>
+                
+                ${
+                  isOwner
+                    ? `
+                  <button class="btn btn-outline-danger px-3" onclick="deleteRequest('${id}')" title="Delete Request">
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                `
+                    : ""
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+            feed.innerHTML += cardHtml;
+          });
+        } catch (error) {
+          console.error("Error loading requests:", error);
+          feed.innerHTML = `<div class="col-12 text-center text-danger py-5">Failed to load requests.</div>`;
+        }
+      }
+
+      // 3. Delete Request Logic (Global scope for inline HTML button)
+      window.deleteRequest = async (id) => {
+        if (confirm("Delete this request?")) {
+          try {
+            await deleteDoc(doc(db, "requests", id));
+            loadNeedBoard(); // Refresh list automatically
+          } catch (error) {
+            console.error("Error deleting request:", error);
+            alert("Failed to delete request.");
+          }
+        }
+      };
+
+      // --- GLOBAL CHAT LOGIC (WhatsApp Style) ---
+
+      const chatBox = document.getElementById("chat-box");
+      const chatForm = document.getElementById("chat-form");
+      const chatInput = document.getElementById("chat-input");
+      const editMsgId = document.getElementById("edit-msg-id");
+      const editIndicator = document.getElementById("edit-indicator");
+      const contextMenu = document.getElementById("chat-context-menu");
+      const typingUI = document.getElementById("typing-indicator-ui");
+
+      let isChatLoaded = false;
+      let selectedMsgId = null;
+      let selectedMsgText = "";
+
+      function initGlobalChat() {
+        if (isChatLoaded) return;
+        isChatLoaded = true;
+
+        // 1. Fetch Messages (Real-time)
+        const q = query(
+          collection(db, "global_chat"),
+          orderBy("createdAt", "asc"),
+        );
+        onSnapshot(q, (snapshot) => {
+          chatBox.innerHTML = "";
+
+          if (snapshot.empty) {
+            chatBox.innerHTML = `<div class="text-center text-muted mt-4">Start the conversation!</div>`;
+            return;
+          }
+
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            const isMe = currentUser && data.email === currentUser.email;
+
+            let timeString = "...";
+            if (data.createdAt)
+              timeString = data.createdAt
+                .toDate()
+                .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+            // Create Bubble Element
+            const bubble = document.createElement("div");
+            bubble.className = `msg-bubble ${isMe ? "msg-mine" : "msg-others"}`;
+
+            // Store data in HTML tags for context menu to read
+            bubble.dataset.id = id;
+            bubble.dataset.text = data.text;
+            bubble.dataset.isme = isMe;
+
+            // HTML Layout for Bubble
+            bubble.innerHTML = `
+        ${!isMe ? `<div class="fw-bold mb-1" style="font-size: 0.8rem; color: #ff5252;">${data.name}</div>` : ""}
+        <div style="font-size: 0.95rem; line-height: 1.4; white-space: pre-wrap;">${data.text}</div>
+        <div class="d-flex justify-content-end align-items-center mt-1" style="font-size: 0.65rem; opacity: 0.7;">
+            ${data.isEdited ? `<span class="me-1 fst-italic">(edited)</span>` : ""}
+            <span>${timeString}</span>
+        </div>
+      `;
+            chatBox.appendChild(bubble);
+          });
+
+          // Auto scroll bottom
+          chatBox.scrollTo(0, chatBox.scrollHeight);
+        });
+
+        // 2. Listen for Typing Indicator (Real-time)
+        onSnapshot(doc(db, "chat_meta", "typing"), (docSnap) => {
+          const data = docSnap.data();
+          // Agar koi aur type kar raha hai aur 3 seconds ke andar type kiya hai
+          if (
+            data &&
+            data.email !== currentUser?.email &&
+            Date.now() - data.time < 3000
+          ) {
+            typingUI.innerText = `${data.name} is typing...`;
+            typingUI.style.display = "block";
+            chatBox.scrollTo(0, chatBox.scrollHeight);
+          } else {
+            typingUI.style.display = "none";
+          }
+        });
+      }
+
+      // --- CONTEXT MENU LOGIC (Right-Click & Long-Press) ---
+      let pressTimer;
+
+      // Handle Right-Click (Laptop)
+      chatBox.addEventListener("contextmenu", (e) => {
+        const bubble = e.target.closest(".msg-bubble");
+        if (bubble) {
+          e.preventDefault(); // Stop default browser menu
+          showContextMenu(e.clientX, e.clientY, bubble);
+        }
+      });
+
+      // Handle Long-Press (Mobile)
+      chatBox.addEventListener("touchstart", (e) => {
+        const bubble = e.target.closest(".msg-bubble");
+        if (bubble) {
+          pressTimer = setTimeout(() => {
+            const touch = e.touches[0];
+            showContextMenu(touch.clientX, touch.clientY, bubble);
+          }, 600); // 600ms = long press
+        }
+      });
+      chatBox.addEventListener("touchend", () => clearTimeout(pressTimer));
+      chatBox.addEventListener("touchmove", () => clearTimeout(pressTimer));
+
+      // Hide Menu if clicked anywhere else
+      document.addEventListener("click", () => {
+        contextMenu.style.display = "none";
+      });
+
+      function showContextMenu(x, y, bubble) {
+        selectedMsgId = bubble.dataset.id;
+        selectedMsgText = bubble.dataset.text;
+        const isMine = bubble.dataset.isme === "true";
+
+        // Show Edit/Delete only if it's My Message
+        document.getElementById("menu-edit").style.display = isMine
+          ? "flex"
+          : "none";
+        document.getElementById("menu-delete").style.display = isMine
+          ? "flex"
+          : "none";
+
+        contextMenu.style.display = "block";
+
+        // Ensure menu doesn't go outside screen bounds
+        const menuWidth = contextMenu.offsetWidth;
+        const menuHeight = contextMenu.offsetHeight;
+        if (x + menuWidth > window.innerWidth)
+          x = window.innerWidth - menuWidth - 10;
+        if (y + menuHeight > window.innerHeight)
+          y = window.innerHeight - menuHeight - 10;
+
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
+      }
+
+      // Action Executor
+      window.executeChatAction = async (action) => {
+        contextMenu.style.display = "none";
+
+        if (action === "copy") {
+          navigator.clipboard.writeText(selectedMsgText);
+          alert("Text copied!");
+        } else if (action === "edit") {
+          editMsgId.value = selectedMsgId;
+          chatInput.value = selectedMsgText;
+          chatInput.focus();
+          editIndicator.classList.remove("d-none");
+          editIndicator.classList.add("d-flex");
+        } else if (action === "delete") {
+          if (confirm("Delete this message?")) {
+            await deleteDoc(doc(db, "global_chat", selectedMsgId));
+          }
+        }
+      };
+
+      window.cancelEditMsg = () => {
+        editMsgId.value = "";
+        chatInput.value = "";
+        editIndicator.classList.add("d-none");
+        editIndicator.classList.remove("d-flex");
+      };
+
+      // --- SEND MESSAGE & EMIT TYPING ---
+      let typingTimer;
+
+      chatInput.addEventListener("input", () => {
+        if (!currentUser) return;
+
+        // Update Typing Status in Database
+        setDoc(doc(db, "chat_meta", "typing"), {
+          name: currentUser.displayName || "Student",
+          email: currentUser.email,
+          time: Date.now(),
+        });
+
+        // Clear typing status after 2.5 seconds of inactivity
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+          setDoc(doc(db, "chat_meta", "typing"), {
+            name: "",
+            email: "",
+            time: 0,
+          });
+        }, 2500);
+      });
+
+      chatForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        const idToEdit = editMsgId.value;
+
+        if (!text) return;
+        chatInput.value = "";
+        cancelEditMsg();
+
+        // Instantly clear typing status when message is sent
+        setDoc(doc(db, "chat_meta", "typing"), {
+          name: "",
+          email: "",
+          time: 0,
+        });
+
+        try {
+          if (idToEdit) {
+            await updateDoc(doc(db, "global_chat", idToEdit), {
+              text: text,
+              isEdited: true,
+            });
+          } else {
+            await addDoc(collection(db, "global_chat"), {
+              text: text,
+              name: currentUser.displayName || "Student",
+              email: currentUser.email,
+              createdAt: serverTimestamp(),
+              isEdited: false,
+            });
+          }
+        } catch (error) {
+          console.error("Error sending message:", error);
+          alert("Failed to send message.");
+        }
+      });
+
+      function timeAgo(date) {
+        if (!date) return "Just now";
+        const seconds = Math.floor((new Date() - date) / 1000);
+
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + " years ago";
+
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + " months ago";
+
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + " days ago";
+
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + " hours ago";
+
+        interval = seconds / 60;
+        if (interval >= 1) return Math.floor(interval) + " mins ago";
+
+        return "Just now";
+      }
+
+      // --- MARK AS SOLD LOGIC ---
+      window.toggleSoldStatus = async (id, currentStatus) => {
+        const newStatus = currentStatus === "sold" ? "available" : "sold";
+        const confirmMsg =
+          newStatus === "sold"
+            ? "Mark this item as Sold?"
+            : "Relist this item as Available?";
+
+        if (confirm(confirmMsg)) {
+          try {
+            await updateDoc(doc(db, "listings", id), {
+              status: newStatus,
+            });
+            loadProducts(); // Marketplace feed refresh
+            loadMyListings(); // My listings refresh
+          } catch (error) {
+            console.error("Error updating status:", error);
+            alert("Failed to update status.");
+          }
+        }
+      };
+
+      // --- WISHLIST LOGIC ---
+
+      // 1. Toggle Wishlist (Add / Remove)
+      window.toggleWishlist = async (id, isCurrentlySaved) => {
+        if (!currentUser) return alert("Please login first!");
+
+        try {
+          const itemRef = doc(db, "listings", id);
+
+          if (isCurrentlySaved) {
+            // Remove from wishlist
+            await updateDoc(itemRef, {
+              savedBy: arrayRemove(currentUser.email),
+            });
+          } else {
+            // Add to wishlist
+            await updateDoc(itemRef, {
+              savedBy: arrayUnion(currentUser.email),
+            });
+          }
+
+          // Refresh views to update heart colors and wishlist feed
+          loadProducts();
+          loadWishlist();
+        } catch (error) {
+          console.error("Error toggling wishlist:", error);
+        }
+      };
+
+      // 2. Load Wishlist Feed
+      async function loadWishlist() {
+        const feed = document.getElementById("wishlist-feed");
+        feed.innerHTML = `<div class="col-12 text-center py-5"><div class="spinner-border text-danger" role="status"></div></div>`;
+
+        try {
+          // Array-Contains query: Sirf wo items lao jinke 'savedBy' array me is user ka email ho
+          const q = query(
+            collection(db, "listings"),
+            where("savedBy", "array-contains", currentUser.email),
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            feed.innerHTML = `
+        <div class="col-12 text-center text-muted py-5">
+            <i class="bi bi-bookmark-heart fs-1 text-muted"></i>
+            <p class="mt-2 text-muted">You haven't saved any items yet.</p>
+        </div>`;
+            return;
+          }
+
+          let savedItems = [];
+          querySnapshot.forEach((docSnap) => {
+            savedItems.push({ id: docSnap.id, ...docSnap.data() });
+          });
+
+          // Wishlist feed render karne ke liye hum marketplace wala same function reuse kar sakte hain!
+          // Par usko 'wishlist-feed' div mein bhejne ke liye hum HTML update karenge.
+          renderWishlistItems(savedItems);
+        } catch (error) {
+          console.error("Error loading wishlist: ", error);
+        }
+      }
+
+      // 3. Render function strictly for Wishlist tab
+      function renderWishlistItems(productsArray) {
+        const feed = document.getElementById("wishlist-feed");
+        feed.innerHTML = "";
+
+        // Yahan hum exactly wahi logic use karenge jo 'renderProducts' me kiya,
+        // bas 'feed.innerHTML += cardHtml' wale part ko reuse kar rahe hain taaki design match kare.
+        // (Aap chaho toh upar wale cardHtml ko ek common function me daal sakte ho, but MVP ke liye hum copy kar rahe hain)
+
+        productsArray.forEach((data) => {
+          const isSold = data.status === "sold";
+          const isSaved = true; // Kyunki ye wishlist tab hai
+
+          let timeString = "Just now";
+          if (data.createdAt) timeString = timeAgo(data.createdAt.toDate());
+
+          const waMessage = encodeURIComponent(
+            `Hi ${data.sellerName}, I am from college. I saw your listing for "${data.title}" priced at ₹${data.price} on CampusXchange. Is it available?`,
+          );
+          const waLink = `https://wa.me/91${data.whatsapp}?text=${waMessage}`;
+
+          const cardHtml = `
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0 premium-card p-0 overflow-hidden ${isSold ? "opacity-75" : ""}">
+                    <div class="position-relative">
+                        <img src="${data.imageUrl}" class="card-img-top" style="height: 200px; object-fit: cover; ${isSold ? "filter: grayscale(100%);" : ""}" referrerpolicy="no-referrer">
+                        ${isSold ? `<div class="position-absolute top-50 start-50 translate-middle bg-danger text-white px-4 py-1 rounded fw-bold shadow" style="transform: translate(-50%, -50%) rotate(-15deg) !important; font-size: 1.2rem; letter-spacing: 2px;">SOLD OUT</div>` : ""}
+                        <button class="btn btn-sm btn-light position-absolute shadow-sm rounded-circle" style="top: 10px; right: 55px; width: 35px; height: 35px; z-index: 10;" onclick="shareItem('${data.title.replace(/'/g, "\\'")}', ${data.price})" title="Share">
+                            <i class="bi bi-share-fill text-primary" style="line-height: 1;"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light position-absolute shadow-sm rounded-circle" style="top: 10px; right: 10px; width: 35px; height: 35px; z-index: 10;" onclick="toggleWishlist('${data.id}', ${isSaved})">
+                            <i class="bi bi-heart-fill text-danger fs-5" style="line-height: 1;"></i>
+                        </button>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary">${data.category}</span>
+                            <h5 class="text-success fw-bold m-0">₹${data.price}</h5>
+                        </div>
+                        <h5 class="card-title fw-bold text-dark mb-1 ${isSold ? "text-decoration-line-through text-muted" : ""}">${data.title}</h5>
+                        <div class="mt-auto">
+                            ${
+                              isSold
+                                ? `<button class="btn btn-secondary w-100 fw-medium" disabled><i class="bi bi-bag-x-fill me-2"></i> Item Sold</button>`
+                                : `<a href="${waLink}" target="_blank" class="btn btn-success w-100 fw-medium"><i class="bi bi-whatsapp me-2"></i> Chat with Seller</a>`
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+          feed.innerHTML += cardHtml;
+        });
+      }
+
+      // --- DARK MODE LOGIC ---
+      const htmlElement = document.documentElement;
+      const darkModeToggleBtn = document.getElementById("dark-mode-toggle");
+
+      // Page load hone par check karo ki pehle dark mode on tha kya
+      if (localStorage.getItem("theme") === "dark") {
+        htmlElement.setAttribute("data-bs-theme", "dark");
+        darkModeToggleBtn.innerHTML =
+          '<i class="bi bi-sun-fill text-warning me-2"></i> Light Mode';
+      }
+
+      window.toggleDarkMode = () => {
+        if (htmlElement.getAttribute("data-bs-theme") === "dark") {
+          htmlElement.setAttribute("data-bs-theme", "light");
+          localStorage.setItem("theme", "light");
+          darkModeToggleBtn.innerHTML =
+            '<i class="bi bi-moon-stars-fill me-2"></i> Dark Mode';
+        } else {
+          htmlElement.setAttribute("data-bs-theme", "dark");
+          localStorage.setItem("theme", "dark");
+          darkModeToggleBtn.innerHTML =
+            '<i class="bi bi-sun-fill text-warning me-2"></i> Light Mode';
+        }
+      };
+
+      // --- SHARE API LOGIC ---
+      window.shareItem = async (title, price) => {
+        const shareData = {
+          title: "CampusXchange",
+          text: `Hey! I found "${title}" for ₹${price} on CampusXchange. Check it out: `,
+          url: window.location.href,
+        };
+
+        try {
+          // Native Share Menu (Mobile phones aur modern browsers ke liye)
+          if (navigator.share) {
+            await navigator.share(shareData);
+          } else {
+            // Agar laptop browser support nahi karta, toh seedha clipboard mein copy karo
+            navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+            alert("Link copied to clipboard!");
+          }
+        } catch (err) {
+          console.error("Error sharing:", err);
+        }
+      };
+
+      // ==========================================
+      // --- CAMPUS LIFE SECTIONS LOGIC ---
+      // ==========================================
+
+      // 1. LOST & FOUND
+      document
+        .getElementById("lf-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const btn = document.getElementById("lf-submit-btn");
+          btn.innerHTML = "Processing...";
+          btn.disabled = true;
+          try {
+            await addDoc(collection(db, "lost_found"), {
+              title: document.getElementById("lf-title").value,
+              type: document.getElementById("lf-type").value,
+              whatsapp: document.getElementById("lf-whatsapp").value,
+              name: currentUser?.displayName || "Student",
+              createdAt: serverTimestamp(),
+            });
+            document.getElementById("lf-form").reset();
+            loadLostFound();
+          } catch (err) {
+            console.error(err);
+          } finally {
+            btn.innerHTML = "Submit Report";
+            btn.disabled = false;
+          }
+        });
+
+      async function loadLostFound() {
+        const feed = document.getElementById("lf-feed");
+        const q = query(
+          collection(db, "lost_found"),
+          orderBy("createdAt", "desc"),
+        );
+        const snapshot = await getDocs(q);
+        feed.innerHTML = snapshot.empty
+          ? `<div class="col-12 text-center py-4">No reports yet.</div>`
+          : "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const isLost = data.type === "Lost";
+          const badgeColor = isLost ? "bg-danger" : "bg-success";
+          const waLink = `https://wa.me/91${data.whatsapp}?text=Hi, regarding your ${data.type} item: ${data.title}`;
+
+          feed.innerHTML += `
+            <div class="col-md-6 mb-3">
+                <div class="card premium-card h-100 shadow-sm border-0 border-start border-4 ${isLost ? "border-danger" : "border-success"}">
+                    <div class="card-body">
+                        <span class="badge ${badgeColor} mb-2">${data.type}</span>
+                        <h6 class="fw-bold">${data.title}</h6>
+                        <small class="text-muted d-block mb-3">Reported by: ${data.name}</small>
+                        <a href="${waLink}" target="_blank" class="btn btn-sm btn-outline-dark w-100"><i class="bi bi-whatsapp text-success me-1"></i> Contact</a>
+                    </div>
+                </div>
+            </div>`;
+        });
+      }
+
+      // 2. PYQ & NOTES VAULT
+      document
+        .getElementById("pyq-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const btn = document.getElementById("pyq-submit-btn");
+          btn.innerHTML = "Sharing...";
+          btn.disabled = true;
+          try {
+            await addDoc(collection(db, "pyq_vault"), {
+              title: document.getElementById("pyq-title").value,
+              sem: document.getElementById("pyq-sem").value,
+              link: document.getElementById("pyq-link").value,
+              name: currentUser?.displayName || "Student",
+              createdAt: serverTimestamp(),
+            });
+            document.getElementById("pyq-form").reset();
+            loadPyqVault();
+          } catch (err) {
+            console.error(err);
+          } finally {
+            btn.innerHTML = "Share Link";
+            btn.disabled = false;
+          }
+        });
+
+      async function loadPyqVault() {
+        const feed = document.getElementById("pyq-feed");
+        const q = query(
+          collection(db, "pyq_vault"),
+          orderBy("createdAt", "desc"),
+        );
+        const snapshot = await getDocs(q);
+        feed.innerHTML = snapshot.empty
+          ? `<div class="col-12 text-center py-4">No materials shared yet.</div>`
+          : "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          feed.innerHTML += `
+            <div class="col-md-6 mb-3">
+                <div class="card premium-card h-100 shadow-sm border-0">
+                    <div class="card-body d-flex flex-column">
+                        <span class="badge bg-success bg-opacity-10 text-success mb-2" style="width: fit-content;">${data.sem}</span>
+                        <h6 class="fw-bold text-dark">${data.title}</h6>
+                        <small class="text-muted mb-3">Shared by ${data.name}</small>
+                        <a href="${data.link}" target="_blank" class="btn btn-sm btn-success mt-auto"><i class="bi bi-box-arrow-up-right me-1"></i> Access Material</a>
+                    </div>
+                </div>
+            </div>`;
+        });
+      }
+
+      // 3. PROJECT MATES
+      document
+        .getElementById("pm-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const btn = document.getElementById("pm-submit-btn");
+          btn.innerHTML = "Posting...";
+          btn.disabled = true;
+          try {
+            await addDoc(collection(db, "project_mates"), {
+              title: document.getElementById("pm-title").value,
+              skills: document.getElementById("pm-skills").value,
+              whatsapp: document.getElementById("pm-whatsapp").value,
+              name: currentUser?.displayName || "Student",
+              createdAt: serverTimestamp(),
+            });
+            document.getElementById("pm-form").reset();
+            loadProjectMates();
+          } catch (err) {
+            console.error(err);
+          } finally {
+            btn.innerHTML = "Post Requirement";
+            btn.disabled = false;
+          }
+        });
+
+      async function loadProjectMates() {
+        const feed = document.getElementById("pm-feed");
+        const q = query(
+          collection(db, "project_mates"),
+          orderBy("createdAt", "desc"),
+        );
+        const snapshot = await getDocs(q);
+        feed.innerHTML = snapshot.empty
+          ? `<div class="col-12 text-center py-4">No team requests yet.</div>`
+          : "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const waLink = `https://wa.me/91${data.whatsapp}?text=Hi ${data.name}, I'm interested in your project: ${data.title}`;
+
+          // Skill tags formatter
+          let skillsHtml = data.skills
+            .split(",")
+            .map(
+              (s) =>
+                `<span class="badge bg-light text-dark border me-1 mb-1">${s.trim()}</span>`,
+            )
+            .join("");
+
+          feed.innerHTML += `
+            <div class="col-md-6 mb-3">
+                <div class="card premium-card h-100 shadow-sm border-0">
+                    <div class="card-body d-flex flex-column">
+                        <h6 class="fw-bold text-primary mb-1">${data.title}</h6>
+                        <small class="text-muted d-block mb-2">Posted by ${data.name}</small>
+                        <div class="mb-3">${skillsHtml}</div>
+                        <a href="${waLink}" target="_blank" class="btn btn-sm btn-outline-primary mt-auto"><i class="bi bi-whatsapp me-1"></i> Message</a>
+                    </div>
+                </div>
+            </div>`;
+        });
+      }
+    </script>
+  </body>
+</html>
