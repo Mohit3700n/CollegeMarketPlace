@@ -78,58 +78,23 @@
       <p id="error-msg" class="text-danger mt-3 fw-medium" style="display: none; font-size: 0.85rem;"></p>
     </div>
 
-    <!-- Firebase v10 SDK -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import {
-        getAuth,
-        signInWithPopup,
-        GoogleAuthProvider,
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyAYEaxgRpLg4sItZx0io1vihe8aZDl_GUY",
-        authDomain: "sjcem-marketplace.firebaseapp.com",
-        projectId: "sjcem-marketplace",
-        storageBucket: "sjcem-marketplace.firebasestorage.app",
-        messagingSenderId: "732493265107",
-        appId: "1:732493265107:web:4309399f2e49db408efc26",
-        measurementId: "G-GE8Q4BDZ9J",
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const provider = new GoogleAuthProvider();
+    <script>
+      const loginError = {{ login_error|tojson }};
+      if (loginError) {
+        const errorMsg = document.getElementById("error-msg");
+        errorMsg.innerText = "Google sign-in failed. Please try again.";
+        errorMsg.style.display = "block";
+      }
 
       document.getElementById("google-login-btn").addEventListener("click", () => {
-          // UI Loading State
           const btn = document.getElementById("google-login-btn");
           const btnText = document.getElementById("btn-text");
           const btnSpinner = document.getElementById("btn-spinner");
-          const errorMsg = document.getElementById("error-msg");
-          
           btn.disabled = true;
           btnText.style.display = "none";
           btnSpinner.style.display = "inline-block";
-          errorMsg.style.display = "none";
-
-          signInWithPopup(auth, provider)
-            .then((result) => {
-              // Firebase ne automatically user.displayName aur user.photoURL fetch kar liya hai.
-              // Ab hum isko dashboard par read karenge.
-              window.location.href = "/dashboard";
-            })
-            .catch((error) => {
-              console.error("Login Error:", error);
-              errorMsg.innerText = "Error logging in. Please try again.";
-              errorMsg.style.display = "block";
-              
-              // Reset UI
-              btn.disabled = false;
-              btnText.style.display = "inline-block";
-              btnSpinner.style.display = "none";
-            });
-        });
+          window.location.assign("/auth/google");
+      });
     </script>
   </body>
 </html>

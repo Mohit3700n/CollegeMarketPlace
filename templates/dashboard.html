@@ -1028,84 +1028,181 @@
       }
     </script>
 
-    <!-- Firebase Logic Placeholder -->
+    <!-- Application logic -->
     <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import {
-        getAuth,
-        onAuthStateChanged,
-        signOut,
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-      import {
-        getFirestore,
-        collection,
-        addDoc,
-        serverTimestamp,
-        getDocs,
-        query,
-        orderBy,
-        where,
-        doc,
-        deleteDoc,
-        updateDoc,
-        onSnapshot,
-        setDoc,
-        arrayUnion,
-        arrayRemove,
-      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-      // YAHA APNA FIREBASE CONFIG DAALNA MAT BHOOLNA
-      const firebaseConfig = {
-        apiKey: "AIzaSyAYEaxgRpLg4sItZx0io1vihe8aZDl_GUY",
-        authDomain: "sjcem-marketplace.firebaseapp.com",
-        projectId: "sjcem-marketplace",
-        storageBucket: "sjcem-marketplace.firebasestorage.app",
-        messagingSenderId: "732493265107",
-        appId: "1:732493265107:web:4309399f2e49db408efc26",
-        measurementId: "G-GE8Q4BDZ9J",
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
-
+      const db = {};
+      let csrfToken = "";
       let currentUser = null;
 
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          // 1. Update Name
-          currentUser = user;
-          document.getElementById("user-name-display").innerText =
-            user.displayName || "College Student";
-          document.getElementById("user-email-display").innerText = user.email;
+      async function apiRequest(path, method = "GET", data = null) {
+        const headers = {};
+        if (data !== null) headers["Content-Type"] = "application/json";
+        if (method !== "GET" && csrfToken) headers["X-CSRF-Token"] = csrfToken;
 
-          // 2. Update Profile Picture
-          if (user.photoURL) {
-            console.log(user.photoURL);
-            document.getElementById("user-profile-img").src = user.photoURL;
+        const response = await fetch(path, {
+          method,
+          headers,
+          credentials: "same-origin",
+          ...(data !== null ? { body: JSON.stringify(data) } : {}),
+        });
+        if (response.status === 204) return null;
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Request failed.");
+        return result;
+      }
+
+      function collection(_db, name) {
+        return { kind: "collection", name, filters: [], order: null };
+      }
+
+      function doc(_db, name, id) {
+        return { kind: "document", name, id };
+      }
+
+      function where(field, op, value) {
+        return { kind: "filter", field, op, value };
+      }
+
+      function orderBy(field, direction = "asc") {
+        return { kind: "order", field, direction };
+      }
+
+      function query(ref, ...constraints) {
+        return constraints.reduce(
+          (result, constraint) => {
+            if (constraint.kind === "filter") result.filters.push(constraint);
+            if (constraint.kind === "order") result.order = constraint;
+            return result;
+          },
+          { ...ref, filters: [], order: null },
+        );
+      }
+
+      function serverTimestamp() {
+        return { __op: "serverTimestamp" };
+      }
+
+      function arrayUnion() {
+        return { __op: "arrayUnion" };
+      }
+
+      function arrayRemove() {
+        return { __op: "arrayRemove" };
+      }
+
+      function documentSnapshot(data) {
+        return {
+          id: data.id,
+          data: () => data,
+          exists: () => data.exists !== false,
+        };
+      }
+
+      async function getDocs(ref) {
+        const params = new URLSearchParams();
+        if (ref.filters?.length) params.set("filters", JSON.stringify(ref.filters));
+        if (ref.order) {
+          params.set("order", ref.order.field);
+          params.set("direction", ref.order.direction);
+        }
+        const result = await apiRequest(
+          `/api/data/${encodeURIComponent(ref.name)}?${params}`,
+        );
+        const docs = result.documents.map(documentSnapshot);
+        return {
+          docs,
+          empty: docs.length === 0,
+          forEach: (callback) => docs.forEach(callback),
+        };
+      }
+
+      function addDoc(ref, data) {
+        return apiRequest(`/api/data/${encodeURIComponent(ref.name)}`, "POST", data);
+      }
+
+      function updateDoc(ref, data) {
+        return apiRequest(
+          `/api/data/${encodeURIComponent(ref.name)}/${encodeURIComponent(ref.id)}`,
+          "PATCH",
+          data,
+        );
+      }
+
+      function setDoc(ref, data) {
+        return apiRequest(
+          `/api/data/${encodeURIComponent(ref.name)}/${encodeURIComponent(ref.id)}`,
+          "PUT",
+          data,
+        );
+      }
+
+      function deleteDoc(ref) {
+        return apiRequest(
+          `/api/data/${encodeURIComponent(ref.name)}/${encodeURIComponent(ref.id)}`,
+          "DELETE",
+        );
+      }
+
+      function onSnapshot(ref, callback) {
+        const refresh = async () => {
+          try {
+            if (ref.kind === "document") {
+              const data = await apiRequest(
+                `/api/data/${encodeURIComponent(ref.name)}/${encodeURIComponent(ref.id)}`,
+              );
+              callback(documentSnapshot(data));
+            } else {
+              callback(await getDocs(ref));
+            }
+          } catch (error) {
+            console.error("Live data refresh failed:", error);
+          }
+        };
+        refresh();
+        return window.setInterval(refresh, 3000);
+      }
+
+      async function initializeDashboard() {
+        try {
+          const auth = await apiRequest("/api/auth/me");
+          currentUser = auth.user;
+          csrfToken = auth.csrfToken;
+          document.getElementById("user-name-display").innerText =
+            currentUser.displayName || "College Student";
+          document.getElementById("user-email-display").innerText =
+            currentUser.email;
+
+          if (currentUser.photoURL) {
+            document.getElementById("user-profile-img").src =
+              currentUser.photoURL;
             document.getElementById("user-profile-img").style.display = "block";
-            document.getElementById("default-user-icon").style.display = "none"; // Default icon hide kar do
+            document.getElementById("default-user-icon").style.display = "none";
           }
           loadProducts();
           loadMyListings();
           loadNeedBoard();
           loadWishlist();
           initGlobalChat();
-
           loadLostFound();
           loadPyqVault();
           loadProjectMates();
-        } else {
-          window.location.href = "/"; // Send back to login
-        }
-      });
-
-      document.getElementById("logout-btn").addEventListener("click", (e) => {
-        e.preventDefault();
-        signOut(auth).then(() => {
+        } catch (error) {
+          console.error("Session initialization failed:", error);
           window.location.href = "/";
-        });
+        }
+      }
+
+      initializeDashboard();
+
+      document.getElementById("logout-btn").addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await apiRequest("/api/auth/logout", "POST");
+          window.location.href = "/";
+        } catch (error) {
+          alert(error.message);
+        }
       });
 
       // --- ADD / UPDATE FORM SUBMIT LOGIC ---
@@ -1128,6 +1225,10 @@
             alert("Please select an image file.");
             return;
           }
+          if (file && file.size > 4 * 1024 * 1024) {
+            alert("Image must be 4 MB or smaller.");
+            return;
+          }
 
           btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Processing...`;
           btn.disabled = true;
@@ -1137,32 +1238,20 @@
 
             // Agar user ne nayi image select ki hai (chahe naya item ho ya edit kar raha ho)
             if (file) {
-              const uniqueFilename =
-                "listings/" +
-                Date.now() +
-                "_" +
-                file.name.replace(/[^a-zA-Z0-9.]/g, "");
-
-              // Cloudflare R2 Upload
-              const urlResponse = await fetch("/api/get-upload-url", {
+              const uploadForm = new FormData();
+              uploadForm.append("file", file);
+              const uploadResponse = await fetch("/api/upload", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  filename: uniqueFilename,
-                  contentType: file.type,
-                }),
+                headers: {
+                  "X-CSRF-Token": csrfToken,
+                },
+                body: uploadForm,
               });
-              const urlData = await urlResponse.json();
-              if (urlData.error) throw new Error(urlData.error);
-
-              const uploadResponse = await fetch(urlData.uploadUrl, {
-                method: "PUT",
-                headers: { "Content-Type": file.type },
-                body: file,
-              });
-              if (!uploadResponse.ok) throw new Error("Image upload failed.");
-
-              finalImageUrl = urlData.publicUrl;
+              const uploadData = await uploadResponse.json();
+              if (!uploadResponse.ok) {
+                throw new Error(uploadData.error || "Image upload failed.");
+              }
+              finalImageUrl = uploadData.publicUrl;
             }
 
             if (editId) {
@@ -1263,7 +1352,7 @@
           // TIME CALCULATION NAYA ADD KIYA HAI
           let timeString = "Just now";
           if (data.createdAt) {
-            timeString = timeAgo(data.createdAt.toDate());
+            timeString = timeAgo(data.createdAt);
           }
 
           // (Inside renderProducts function)
@@ -1637,9 +1726,10 @@
 
             let timeString = "...";
             if (data.createdAt)
-              timeString = data.createdAt
-                .toDate()
-                .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+              timeString = new Date(data.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
 
             // Create Bubble Element
             const bubble = document.createElement("div");
@@ -1831,7 +1921,7 @@
 
       function timeAgo(date) {
         if (!date) return "Just now";
-        const seconds = Math.floor((new Date() - date) / 1000);
+        const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
 
         let interval = seconds / 31536000;
         if (interval > 1) return Math.floor(interval) + " years ago";
@@ -1951,7 +2041,7 @@
           const isSaved = true; // Kyunki ye wishlist tab hai
 
           let timeString = "Just now";
-          if (data.createdAt) timeString = timeAgo(data.createdAt.toDate());
+          if (data.createdAt) timeString = timeAgo(data.createdAt);
 
           const waMessage = encodeURIComponent(
             `Hi ${data.sellerName}, I am from college. I saw your listing for "${data.title}" priced at ₹${data.price} on CampusXchange. Is it available?`,
